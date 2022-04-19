@@ -26,4 +26,12 @@ canvas {
     position: absolute;
     left: 0;
     top: 0;
+    margin: 3px;
+}
+
+.helper{
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 3px;
 }

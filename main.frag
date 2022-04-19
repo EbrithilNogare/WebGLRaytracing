@@ -28,6 +28,7 @@ struct Material{
 	vec3 color;
 	float reflection;
 	float refraction;
+	bool texture;
 };
 
 struct Sphere{
@@ -40,6 +41,8 @@ struct HitRecord {
     vec3 p;			// position
     vec3 normal;
     float t;		// distance
+	float u;
+	float v;
 	bool frontFace;
 	Material material;
 };
@@ -98,30 +101,44 @@ vec3 random_in_hemisphere(vec3 normal, float seed) {
 // vec3 Color, vec2 TextureUV, float Reflect, bool Refract, float RefractDelta
 
 
-//                                           R    G    B  Reflect Refract
-const Material ground      = Material(vec3(0.2, 0.2, 0.2), 0.0, 0.0);
-const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0, 1.5);
-const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0, 0.0);
-const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0, 0.0);
-const Material solidRed    = Material(vec3(1.0, 0.0, 0.0), 0.0, 0.0);
-const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0, 0.0);
-const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0, 0.0);
-const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0, 0.0);
+//                                           R    G    B  Reflect Refract Texture
+const Material ground      = Material(vec3(0.3, 0.3, 0.3), 0.0,  0.0,    true);
+const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0,  1.5,    false);
+const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0,  0.0,    false);
+const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0,  0.0,    false);
+const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false);
+const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0,  0.0,    false);
+const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,    false);
+const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,    false);
 
 const Sphere spheres[] = Sphere[](
-	Sphere(vec3(-1.2, 0.5, 0.0), 0.5, solidIndigo),
+	Sphere(vec3(-1.2, 0.4, 0.0), 0.4, solidIndigo),
 	Sphere(vec3( 0.0, 0.5, 0.0), 0.5, glass),
 	Sphere(vec3( 1.2, 0.5, 0.0), 0.5, metal),
-	Sphere(vec3( 1.0, 0.1, 1.0), 0.1, solidRed),
-	Sphere(vec3(-1.0, 0.1, 1.0), 0.1, glass),
-	Sphere(vec3( 2.0, 0.1, 1.0), 0.1, solidYellow),
-	Sphere(vec3(-2.0, 0.1, 1.0), 0.1, solidGreen),
+
+	Sphere(vec3( 1.0, 0.1, 1.0), 0.1, solidYellow),
+	Sphere(vec3(-1.0, 0.1, 1.0), 0.1, solidGreen),
+	Sphere(vec3( 2.0, 0.2, 1.0), 0.2, reflectRed),
+	Sphere(vec3(-2.0, 0.1, 1.0), 0.1, glass),
+	Sphere(vec3( 0.0, 0.1, 1.0), 0.1, glass),
+
+	Sphere(vec3( 1.0, 0.2, 2.0), 0.2, reflectRed),
+	Sphere(vec3(-1.0, 0.2, 2.0), 0.2, glass),
+	Sphere(vec3( 2.0, 0.1, 2.0), 0.1, solidYellow),
+	Sphere(vec3(-2.0, 0.1, 2.0), 0.1, solidGreen),
+	Sphere(vec3( 0.0, 0.1, 2.0), 0.1, solidBlue),
+
 	Sphere(vec3( 1.0, 0.1,-1.0), 0.1, glass),
 	Sphere(vec3(-1.0, 0.1,-1.0), 0.1, solidBlue),
 	Sphere(vec3( 2.0, 0.1,-1.0), 0.1, solidYellow),
 	Sphere(vec3(-2.0, 0.1,-1.0), 0.1, solidGreen),
-	Sphere(vec3( 0.0, 0.1,-1.0), 0.1, solidRed),
-	Sphere(vec3( 0.0, 0.1, 1.0), 0.1, solidBlue),
+	Sphere(vec3( 0.0, 0.2,-1.0), 0.2, reflectRed),
+
+	Sphere(vec3( 1.0, 0.1,-2.0), 0.1, solidYellow),
+	Sphere(vec3(-1.0, 0.1,-2.0), 0.1, solidGreen),
+	Sphere(vec3( 2.0, 0.2,-2.0), 0.2, reflectRed),
+	Sphere(vec3(-2.0, 0.1,-2.0), 0.1, solidBlue),
+	Sphere(vec3( 0.0, 0.1,-2.0), 0.1, glass),
 
 	Sphere(vec3( 0.0,-500, 0.0), 500.0, ground) // ground
 );
@@ -188,6 +205,11 @@ bool hitSphere(Sphere sphere, Ray ray, float tMin, float tMax, inout HitRecord r
 	rec.normal = rec.frontFace ? outward_normal : - outward_normal;
 	rec.material = sphere.material;
 
+	float theta = acos(-rec.p.y);
+	float phi = atan(-rec.p.z, rec.p.x) + PI;
+	rec.u = phi / (2.0 * PI);
+	rec.v = theta / PI;
+
 	return true;
 }
 
@@ -206,7 +228,7 @@ vec3 rayColor(Ray ray, int maxDepth){
 	int depth = 0;
 	for(; depth < maxDepth; depth++){
 
-		HitRecord rec = HitRecord(vec3(0.0),vec3(0.0), INFINITY, false, ground);
+		HitRecord rec = HitRecord(vec3(0.0),vec3(0.0), INFINITY, 0.0, 0.0, false, ground);
 
 		for(int i = 0; i < spheres.length(); i++)
 			hitSphere(spheres[i], ray, EPSILON, rec.t, rec);
@@ -216,23 +238,29 @@ vec3 rayColor(Ray ray, int maxDepth){
 
 		if (rec.t < INFINITY){
 			vec3 target;
-			if(rec.material.refraction > 0.0){
+			if(rec.material.refraction > 0.0){ // glass
 				float refraction_ratio = rec.frontFace ? (1.0 / rec.material.refraction) : rec.material.refraction;
 				vec3 unit_direction = normalize(ray.direction);
 	            target = refract(unit_direction, rec.normal, refraction_ratio);
-			}
-			else if(rec.material.reflection > rand(rec.t))
+			} else if(rec.material.reflection > rand(rec.t)) // mirror
 				target = reflect(ray.direction, rec.normal);
-			else
+			else // diffuse
 				target = rec.normal + random_in_hemisphere(rec.normal, rec.t);
 
 			ray = Ray(rec.p, target);
-			colorOut = mix(colorOut, rec.material.color, reflectionD);
+
+			vec3 color = rec.material.color * colorOut;
+			if(rec.material.texture && sin(16.0 * rec.p.x) * sin(16.0 * rec.p.z) < -0.015)
+				color = rec.material.color / 8.0;
+			
+			
+			colorOut = mix(colorOut, color, reflectionD);
 			reflectionD *= rec.material.reflection;
 		} else { // nothing hitted
 			vec3 unitDirection = unitVector(ray.direction);
 			rec.t = 0.5 * (unitDirection.y + 1.0);
-			colorOut = mix(colorOut, (1.0 - rec.t) * vec3(1.0, 1.0, 1.0) + rec.t * vec3(0.5, 0.7, 1.0), reflectionD);
+			vec3 sky = mix(vec3(1.0), vec3(1.0 - rec.t) + rec.t * vec3(0.4, 0.6, 1.0), reflectionD);
+			colorOut *= sky;  
 			break;
 		}
 	}

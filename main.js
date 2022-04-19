@@ -1,5 +1,10 @@
-let canvas, gl, program, tick = 0
+let canvas, gl, program, tick = 0, loop = false
 let frameTimes = []
+let camera = {
+	x: () => 4 * Math.sin(tick / 100),
+	y: () => .9,
+	z: () => 4 * Math.cos(tick / 100),
+}
 
 
 async function init(){
@@ -13,8 +18,17 @@ async function init(){
 	if(!gl)
 		throw("no webgl 2")
 
+	document.body.onkeydown = function(e) {
+		if (e.key == " " ||
+			e.code == "Space" ||      
+			e.keyCode == 32      
+		)
+		loop = !loop
+	}
+
 	await initProgram()
 
+	renderLoop()
 	render()
 }
 
@@ -56,9 +70,7 @@ async function initProgram(){
 	console.log(`Time to compile: ${Date.now() - stopwatch} ms`);
 }
 
-function render(){
-	tickFPSMeter();
-	
+function render(){	
 	tick += .5;
 
 	gl.clearColor(0.9, 0.9, 0.9, 1.0);
@@ -70,7 +82,7 @@ function render(){
 	gl.uniform2f(resolutionLoc, canvas.width, canvas.height);
 
 	let cameraPosLoc = gl.getUniformLocation(program, "cameraPos");
-	gl.uniform3f(cameraPosLoc, 4*Math.sin(tick/100), 1.5, 4*Math.cos(tick/100));
+	gl.uniform3f(cameraPosLoc, camera.x(), camera.y(), camera.z());
 
 	let cameraLookAtLoc = gl.getUniformLocation(program, "cameraLookAt");
 	gl.uniform3f(cameraLookAtLoc, 0, 0, 0);
@@ -117,7 +129,14 @@ function render(){
 		6				// count
 	);
 
-	requestAnimationFrame(render);
+}
+
+function renderLoop(){
+	if(loop){
+		tickFPSMeter()
+		render()
+	}
+	requestAnimationFrame(renderLoop)
 }
 
 function tickFPSMeter(){

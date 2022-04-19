@@ -2,5 +2,5 @@
 raytracing in webgl
 
 ## Run
-start serving files
+start serving files  
 open *index.html*
