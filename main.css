@@ -36,4 +36,6 @@ canvas {
     right: 0;
     top: 0;
     margin: 3px;
+    color: white;
+    mix-blend-mode: difference;
 }

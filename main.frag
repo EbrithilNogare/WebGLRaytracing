@@ -12,7 +12,7 @@ out vec4 outColor;
 
 // editable
 const int SAMPLES = 32;
-const int MAXBOUNCES = 16;
+const int MAXBOUNCES = 6;
 
 
 const float INFINITY = 1.0 / 0.0;
@@ -50,7 +50,7 @@ struct HitRecord {
 
 
 bool hitSphere(Sphere sphere, Ray ray);
-vec3 rayColor(Ray ray, int depth);
+vec3 rayColor(Ray ray);
 
 vec3 unitVector(vec3 v) {
     return v / length(v);
@@ -61,7 +61,7 @@ vec3 at(Ray ray, float t) {
 }
 
 float rand(float seed){
-    return fract(sin(dot(vec2(seed) * coordinates, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(vec2(seed) * coordinates + cameraPos.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 float rand(float seed, float min, float max){ return min + (max - min) * rand(seed); }
@@ -107,12 +107,16 @@ const Material ground      = Material(vec3(0.3, 0.3, 0.3), 0.0,  0.0,    true,  
 const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0,  1.5,    false, false);
 const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0,  0.0,    false, false);
 const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0,  0.0,    false, false);
-const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false, false);
 const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0,  0.0,    false, false);
+const Material solidRed    = Material(vec3(1.0, 0.0, 0.0), 0.0,  0.0,    false, false);
 const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,    false, false);
 const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,    false, false);
-const Material light       = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0, false, true );
+const Material solidWhite  = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, false);
+const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false, false);
+const Material light       = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, true );
+const Material strongLight = Material(vec3(5.0, 5.0, 5.0), 0.0,  0.0,    false, true );
 
+/**/ // switch
 const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-1.2, 0.4, 0.0), 0.4, solidIndigo),
 	Sphere(vec3( 0.0, 0.5, 0.0), 0.5, glass),
@@ -146,6 +150,20 @@ const Sphere spheres[] = Sphere[](
 
 	Sphere(vec3( 0.0,-500, 0.0), 500.0, ground) // ground
 );
+/*/
+const Sphere spheres[] = Sphere[](
+	Sphere(vec3(-501.0, 0.5, 0.0), 500.0, solidRed),
+	Sphere(vec3( 501.0, 0.5, 0.0), 500.0, solidGreen),
+	Sphere(vec3( 0.0, 0.5,-501.0), 500.0, solidWhite),
+	Sphere(vec3(0.0, 501.5, 0.0), 500.0, solidWhite),
+	Sphere(vec3(0.0,-500.5, 0.0), 500.0, ground),
+
+	Sphere(vec3( 0.0, 11.48, 0.0), 10.0, strongLight),	
+
+	Sphere(vec3( -0.3, 0.0, 0.0), 0.5, metal),
+	Sphere(vec3( 0.5, -0.3, 0.3), 0.2, solidWhite)
+);
+/**/
 
 void main() {
 	vec3 tmpColor = vec3(0.0);
@@ -177,10 +195,11 @@ void main() {
 		randomOffset += (coordinates + 1.0) / 2.0;
 
 		Ray ray = Ray(cameraPos, lower_left_corner + randomOffset.x * horizontal + randomOffset.y * vertical - cameraPos);
-		tmpColor += rayColor(ray, MAXBOUNCES);
+		tmpColor += rayColor(ray);
 	}
 
-	outColor = vec4(sqrt(tmpColor / float(SAMPLES)), 1.0);
+	float gamma = 2.2;
+	outColor = vec4(pow(tmpColor / float(SAMPLES), vec3(1.0 / gamma)), 1.0);
 }
 
 bool hitSphere(Sphere sphere, Ray ray, float tMin, float tMax, inout HitRecord rec) {
@@ -224,21 +243,16 @@ vec3 refract(vec3 uv, vec3 n, float etai_over_etat) {
     return r_out_perp + r_out_parallel;
 }
 
-vec3 rayColor(Ray ray, int maxDepth){
+vec3 rayColor(Ray ray){
 	vec3 colorOut = vec3(1.0);
-	float reflectionD = 1.0;
-	float depthBuffer = 0.0;
 
 	int depth = 0;
-	for(; depth < maxDepth; depth++){
+	for(; depth < MAXBOUNCES; depth++){
 
 		HitRecord rec = HitRecord(vec3(0.0),vec3(0.0), INFINITY, 0.0, 0.0, false, ground);
-
 		for(int i = 0; i < spheres.length(); i++)
 			hitSphere(spheres[i], ray, EPSILON, rec.t, rec);
 		
-		if(depth == 0)
-			depthBuffer = rec.t;
 
 		if(rec.material.emissive){ // light
 			colorOut *= rec.material.color;
@@ -269,18 +283,13 @@ vec3 rayColor(Ray ray, int maxDepth){
 
 		ray = Ray(rec.p, target);
 
+
 		vec3 color = rec.material.color * colorOut;
 		if(rec.material.texture && sin(16.0 * rec.p.x) * sin(16.0 * rec.p.z) < -0.015)
 			color = rec.material.color / 8.0;
 				
-//		colorOut = mix(colorOut, color, reflectionD);
-		colorOut = color; 
-		reflectionD *= rec.material.reflection;
+		colorOut = color;
 	}
 	
-	
-	// add depth
-	// colorOut /= clamp(depthBuffer+1.0, 1.0, 4.0);
-    
-	return depth == maxDepth ? vec3(0) : colorOut;
+	return depth == MAXBOUNCES ? vec3(0) : colorOut;
 }
