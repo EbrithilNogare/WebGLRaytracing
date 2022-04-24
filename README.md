@@ -6,4 +6,4 @@ start serving files
 open *index.html*
 
 ## Run online (without downloading and serving)
-https://raw.githack.com/EbrithilNogare/WebGLRaytracing/main/index.html
+https://ebrithilnogare.github.io/WebGLRaytracing/index.html
