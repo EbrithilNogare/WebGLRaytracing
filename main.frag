@@ -12,7 +12,7 @@ out vec4 outColor;
 
 // editable
 const int SAMPLES = 32;
-const int MAXBOUNCES = 10;
+const int MAXBOUNCES = 16;
 
 
 const float INFINITY = 1.0 / 0.0;
@@ -29,6 +29,7 @@ struct Material{
 	float reflection;
 	float refraction;
 	bool texture;
+	bool emissive;
 };
 
 struct Sphere{
@@ -101,15 +102,16 @@ vec3 random_in_hemisphere(vec3 normal, float seed) {
 // vec3 Color, vec2 TextureUV, float Reflect, bool Refract, float RefractDelta
 
 
-//                                           R    G    B  Reflect Refract Texture
-const Material ground      = Material(vec3(0.3, 0.3, 0.3), 0.0,  0.0,    true);
-const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0,  1.5,    false);
-const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0,  0.0,    false);
-const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0,  0.0,    false);
-const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false);
-const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0,  0.0,    false);
-const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,    false);
-const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,    false);
+//                                           R    G    B  Reflect Refract Texture Emissive
+const Material ground      = Material(vec3(0.3, 0.3, 0.3), 0.0,  0.0,    true,  false);
+const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0,  1.5,    false, false);
+const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0,  0.0,    false, false);
+const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0,  0.0,    false, false);
+const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false, false);
+const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0,  0.0,    false, false);
+const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,    false, false);
+const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,    false, false);
+const Material light       = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0, false, true );
 
 const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-1.2, 0.4, 0.0), 0.4, solidIndigo),
@@ -139,6 +141,8 @@ const Sphere spheres[] = Sphere[](
 	Sphere(vec3( 2.0, 0.2,-2.0), 0.2, reflectRed),
 	Sphere(vec3(-2.0, 0.1,-2.0), 0.1, solidBlue),
 	Sphere(vec3( 0.0, 0.1,-2.0), 0.1, glass),
+
+	Sphere(vec3( 0.0, 20.0,0.0), 10.0, light),
 
 	Sphere(vec3( 0.0,-500, 0.0), 500.0, ground) // ground
 );
@@ -236,33 +240,42 @@ vec3 rayColor(Ray ray, int maxDepth){
 		if(depth == 0)
 			depthBuffer = rec.t;
 
-		if (rec.t < INFINITY){
-			vec3 target;
-			if(rec.material.refraction > 0.0){ // glass
-				float refraction_ratio = rec.frontFace ? (1.0 / rec.material.refraction) : rec.material.refraction;
-				vec3 unit_direction = normalize(ray.direction);
-	            target = refract(unit_direction, rec.normal, refraction_ratio);
-			} else if(rec.material.reflection > rand(rec.t)) // mirror
-				target = reflect(ray.direction, rec.normal);
-			else // diffuse
-				target = rec.normal + random_in_hemisphere(rec.normal, rec.t);
+		if(rec.material.emissive){ // light
+			colorOut *= rec.material.color;
+			break;
+		}
 
-			ray = Ray(rec.p, target);
-
-			vec3 color = rec.material.color * colorOut;
-			if(rec.material.texture && sin(16.0 * rec.p.x) * sin(16.0 * rec.p.z) < -0.015)
-				color = rec.material.color / 8.0;
-			
-			
-			colorOut = mix(colorOut, color, reflectionD);
-			reflectionD *= rec.material.reflection;
-		} else { // nothing hitted
+		if(rec.t >= INFINITY){ // nothing hitted
+			/**/ // switch
+			colorOut = vec3(0);
+			/*/
 			vec3 unitDirection = unitVector(ray.direction);
 			rec.t = 0.5 * (unitDirection.y + 1.0);
 			vec3 sky = mix(vec3(1.0), vec3(1.0 - rec.t) + rec.t * vec3(0.4, 0.6, 1.0), reflectionD);
 			colorOut *= sky;  
+			/**/
 			break;
 		}
+
+		vec3 target;
+		if(rec.material.refraction > 0.0){ // glass
+			float refraction_ratio = rec.frontFace ? (1.0 / rec.material.refraction) : rec.material.refraction;
+			vec3 unit_direction = normalize(ray.direction);
+			target = refract(unit_direction, rec.normal, refraction_ratio);
+		} else if(rec.material.reflection > rand(rec.t)) // mirror
+			target = reflect(ray.direction, rec.normal);
+		else // diffuse
+			target = rec.normal + random_in_hemisphere(rec.normal, rec.t);
+
+		ray = Ray(rec.p, target);
+
+		vec3 color = rec.material.color * colorOut;
+		if(rec.material.texture && sin(16.0 * rec.p.x) * sin(16.0 * rec.p.z) < -0.015)
+			color = rec.material.color / 8.0;
+				
+//		colorOut = mix(colorOut, color, reflectionD);
+		colorOut = color; 
+		reflectionD *= rec.material.reflection;
 	}
 	
 	
