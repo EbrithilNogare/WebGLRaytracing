@@ -11,7 +11,7 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-const int SAMPLES = 32;
+const int SAMPLES = 64;
 const int MAXBOUNCES = 6;
 
 
@@ -61,7 +61,7 @@ vec3 at(Ray ray, float t) {
 }
 
 float rand(float seed){
-    return fract(sin(dot(vec2(seed) * coordinates + cameraPos.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(vec2(seed) * coordinates, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 float rand(float seed, float min, float max){ return min + (max - min) * rand(seed); }
@@ -71,19 +71,15 @@ vec3 rand3(float seed, float min, float max) { return vec3(rand(seed, min, max),
 vec3 rand3(float seed) { return rand3(seed, 0.0, 1.0); }
 
 vec3 random_in_unit_sphere(float seed) {
-    vec3 rand = rand3(seed);
-    float phi = 2.0 * PI * rand.x;
-    float cosTheta = 2.0 * rand.y - 1.0;
-    float u = rand.z;
-
-    float theta = acos(cosTheta);
-    float r = pow(u, 1.0 / 3.0);
-
-    float x = r * sin(theta) * cos(phi);
-    float y = r * sin(theta) * sin(phi);
-    float z = r * cos(theta);
-
-    return vec3(x, y, z);
+	vec3 rand = rand3(seed);
+	float ang1 = (rand.x + 1.0) * PI; // [-1..1) -> [0..2*PI)
+	float u = rand.y; // [-1..1), cos and acos(2v-1) cancel each other out, so we arrive at [-1..1)
+	float u2 = u * u;
+	float sqrt1MinusU2 = sqrt(1.0 - u2);
+	float x = sqrt1MinusU2 * cos(ang1);
+	float y = sqrt1MinusU2 * sin(ang1);
+	float z = u;
+	return vec3(x, y, z);
 }
 
 vec3 random_unit_vector(float seed) {
@@ -112,7 +108,6 @@ const Material solidRed    = Material(vec3(1.0, 0.0, 0.0), 0.0,  0.0,    false, 
 const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,    false, false);
 const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,    false, false);
 const Material solidWhite  = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, false);
-const Material reflectRed  = Material(vec3(1.0, 0.0, 0.0), 1.0,  0.0,    false, false);
 const Material light       = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, true );
 const Material strongLight = Material(vec3(5.0, 5.0, 5.0), 0.0,  0.0,    false, true );
 
@@ -124,11 +119,11 @@ const Sphere spheres[] = Sphere[](
 
 	Sphere(vec3( 1.0, 0.1, 1.0), 0.1, solidYellow),
 	Sphere(vec3(-1.0, 0.1, 1.0), 0.1, solidGreen),
-	Sphere(vec3( 2.0, 0.2, 1.0), 0.2, reflectRed),
+	Sphere(vec3( 2.0, 0.2, 1.0), 0.2, solidRed),
 	Sphere(vec3(-2.0, 0.1, 1.0), 0.1, glass),
 	Sphere(vec3( 0.0, 0.1, 1.0), 0.1, glass),
 
-	Sphere(vec3( 1.0, 0.2, 2.0), 0.2, reflectRed),
+	Sphere(vec3( 1.0, 0.2, 2.0), 0.2, solidWhite),
 	Sphere(vec3(-1.0, 0.2, 2.0), 0.2, glass),
 	Sphere(vec3( 2.0, 0.1, 2.0), 0.1, solidYellow),
 	Sphere(vec3(-2.0, 0.1, 2.0), 0.1, solidGreen),
@@ -138,11 +133,11 @@ const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-1.0, 0.1,-1.0), 0.1, solidBlue),
 	Sphere(vec3( 2.0, 0.1,-1.0), 0.1, solidYellow),
 	Sphere(vec3(-2.0, 0.1,-1.0), 0.1, solidGreen),
-	Sphere(vec3( 0.0, 0.2,-1.0), 0.2, reflectRed),
+	Sphere(vec3( 0.0, 0.2,-1.0), 0.2, solidRed),
 
 	Sphere(vec3( 1.0, 0.1,-2.0), 0.1, solidYellow),
 	Sphere(vec3(-1.0, 0.1,-2.0), 0.1, solidGreen),
-	Sphere(vec3( 2.0, 0.2,-2.0), 0.2, reflectRed),
+	Sphere(vec3( 2.0, 0.2,-2.0), 0.2, metal),
 	Sphere(vec3(-2.0, 0.1,-2.0), 0.1, solidBlue),
 	Sphere(vec3( 0.0, 0.1,-2.0), 0.1, glass),
 
@@ -152,16 +147,16 @@ const Sphere spheres[] = Sphere[](
 );
 /*/
 const Sphere spheres[] = Sphere[](
-	Sphere(vec3(-501.0, 0.5, 0.0), 500.0, solidRed),
-	Sphere(vec3( 501.0, 0.5, 0.0), 500.0, solidGreen),
-	Sphere(vec3( 0.0, 0.5,-501.0), 500.0, solidWhite),
-	Sphere(vec3(0.0, 501.5, 0.0), 500.0, solidWhite),
-	Sphere(vec3(0.0,-500.5, 0.0), 500.0, ground),
+	Sphere(vec3(-1001.0, 0.5, 0.0), 1000.0, solidRed),
+	Sphere(vec3( 1001.0, 0.5, 0.0), 1000.0, solidGreen),
+	Sphere(vec3( 0.0, 0.5,-1001.0), 1000.0, solidWhite),
+	Sphere(vec3(0.0, 1001.5, 0.0), 1000.0, solidWhite),
+	Sphere(vec3(0.0,-1000.5, 0.0), 1000.0, solidWhite),
 
 	Sphere(vec3( 0.0, 11.48, 0.0), 10.0, strongLight),	
 
 	Sphere(vec3( -0.3, 0.0, 0.0), 0.5, metal),
-	Sphere(vec3( 0.5, -0.3, 0.3), 0.2, solidWhite)
+	Sphere(vec3( 0.5, -0.2, 0.6), 0.3, glass)
 );
 /**/
 
@@ -199,7 +194,9 @@ void main() {
 	}
 
 	float gamma = 2.2;
+
 	outColor = vec4(pow(tmpColor / float(SAMPLES), vec3(1.0 / gamma)), 1.0);
+	//outColor = vec4(vec3(rand(1.2)), 1.0); // rand test
 }
 
 bool hitSphere(Sphere sphere, Ray ray, float tMin, float tMax, inout HitRecord rec) {
@@ -234,13 +231,6 @@ bool hitSphere(Sphere sphere, Ray ray, float tMin, float tMax, inout HitRecord r
 	rec.v = theta / PI;
 
 	return true;
-}
-
-vec3 refract(vec3 uv, vec3 n, float etai_over_etat) {
-    float cos_theta = min(dot(-uv, n), 1.0);
-    vec3 r_out_perp = etai_over_etat * (uv + cos_theta*n);
-    vec3 r_out_parallel = -sqrt(abs(1.0 - length(r_out_perp) * length(r_out_perp))) * n;
-    return r_out_perp + r_out_parallel;
 }
 
 vec3 rayColor(Ray ray){
