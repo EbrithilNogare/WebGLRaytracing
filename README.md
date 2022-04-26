@@ -5,5 +5,5 @@ raytracing in webgl
 start serving files  
 open *index.html*
 
-## Run online (without downloading and serving)
+## Live Demo
 https://ebrithilnogare.github.io/WebGLRaytracing/index.html
