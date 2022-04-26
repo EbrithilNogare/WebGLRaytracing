@@ -11,13 +11,13 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-const int SAMPLES = 64;
-const int MAXBOUNCES = 6;
+const int SAMPLES = 32;
+const int MAXBOUNCES = 8;
 
 
 const float INFINITY = 1.0 / 0.0;
 const float EPSILON = 0.0001; // todo better definition
-const float PI = 3.1415926535;
+const float PI = 3.1415926535897932384626433832795;
 
 struct Ray {
 	vec3 origin;
@@ -63,12 +63,11 @@ vec3 at(Ray ray, float t) {
 float rand(float seed){
     return fract(sin(dot(vec2(seed) * coordinates, vec2(12.9898, 78.233))) * 43758.5453);
 }
-
-float rand(float seed, float min, float max){ return min + (max - min) * rand(seed); }
-vec2 rand2(float seed, float min, float max) { return vec2( rand(seed, min, max), rand(seed * 4789.0, min, max)); }
-vec2 rand2(float seed) { return rand2(seed, 0.0, 1.0); }
+float rand(float seed, float min, float max) { return min + (max - min) * rand(seed); }
+vec2 rand2(float seed, float min, float max) { return vec2( rand(seed, min, max), rand(seed * 4793.0, min, max)); }
 vec3 rand3(float seed, float min, float max) { return vec3(rand(seed, min, max), rand(seed + 4789.0, min, max), rand(seed + 7919.0, min, max)); }
-vec3 rand3(float seed) { return rand3(seed, 0.0, 1.0); }
+vec2 rand2(float seed)                       { return rand2(seed, 0.0, 1.0); }
+vec3 rand3(float seed)                       { return rand3(seed, 0.0, 1.0); }
 
 vec3 random_in_unit_sphere(float seed) {
 	vec3 rand = rand3(seed);
@@ -111,7 +110,7 @@ const Material solidWhite  = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, 
 const Material light       = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,    false, true );
 const Material strongLight = Material(vec3(5.0, 5.0, 5.0), 0.0,  0.0,    false, true );
 
-/**/ // switch
+/*/ // switch
 const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-1.2, 0.4, 0.0), 0.4, solidIndigo),
 	Sphere(vec3( 0.0, 0.5, 0.0), 0.5, glass),
@@ -186,7 +185,7 @@ void main() {
 	vec3 lower_left_corner = origin - horizontal / 2. - vertical / 2. - focus_dist * w;
 
 	for(int sampleI = 0; sampleI < SAMPLES; sampleI++){
-		vec2 randomOffset = rand2(float(sampleI)) / resolution;
+		vec2 randomOffset = rand2(float(2048 * sampleI)) / resolution;
 		randomOffset += (coordinates + 1.0) / 2.0;
 
 		Ray ray = Ray(cameraPos, lower_left_corner + randomOffset.x * horizontal + randomOffset.y * vertical - cameraPos);
@@ -269,16 +268,16 @@ vec3 rayColor(Ray ray){
 		} else if(rec.material.reflection > rand(rec.t)) // mirror
 			target = reflect(ray.direction, rec.normal);
 		else // diffuse
-			target = rec.normal + random_in_hemisphere(rec.normal, rec.t);
+			target = rec.normal + random_in_hemisphere(rec.normal, rec.t / 2.0 + float(depth));
 
 		ray = Ray(rec.p, target);
 
 
-		vec3 color = rec.material.color * colorOut;
+		vec3 color = rec.material.color;
 		if(rec.material.texture && sin(16.0 * rec.p.x) * sin(16.0 * rec.p.z) < -0.015)
 			color = rec.material.color / 8.0;
 				
-		colorOut = color;
+		colorOut *= color;
 	}
 	
 	return depth == MAXBOUNCES ? vec3(0) : colorOut;

@@ -7,10 +7,16 @@ let camera = {
 }
 
 
-async function init(){
+async function init(width = window.innerWidth, height = window.innerHeight){
 	canvas = document.getElementById("canvas");
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;	
+	canvas.width = width;
+	canvas.height = height;	
+
+	canvas.addEventListener("webglcontextlost", function(event) {
+		event.preventDefault();
+		console.error("webglcontextlost", event);
+		init(width/2, height/2);
+	}, false);
 	
 	gl = canvas.getContext('webgl2');
 	gl.imageSmoothingEnabled = false;
@@ -20,8 +26,7 @@ async function init(){
 
 	document.body.onkeydown = function(e) {
 		if (e.key == " " ||
-			e.code == "Space" ||      
-			e.keyCode == 32      
+			e.code == "Space"    
 		)
 		loop = !loop
 	}
@@ -73,9 +78,6 @@ async function initProgram(){
 function render(){	
 	tick += .5;
 
-	gl.clearColor(0.9, 0.9, 0.9, 1.0);
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
 	gl.useProgram(program);
 
 	let resolutionLoc = gl.getUniformLocation(program, "resolution");
@@ -92,15 +94,7 @@ function render(){
 
 	let positionBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-	let positions = [
-		1, 1,
-		1, -1,
-		-1, -1,
-
-		-1, -1,
-		-1, 1,
-		1, 1,
-	];
+	let positions = [-1,  3, -1, -1, 3, -1];
 	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
 	let vao = gl.createVertexArray();
@@ -117,9 +111,6 @@ function render(){
 	);
 
 	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-	gl.clearColor(0, 0, 0, 0);
-	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	gl.bindVertexArray(vao);
 
