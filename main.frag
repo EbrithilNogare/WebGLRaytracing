@@ -11,8 +11,8 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-const int SAMPLES = 32;
-const int MAXBOUNCES = 8;
+#define SAMPLES 16
+#define MAXBOUNCES 8
 
 
 const float INFINITY = 1.0 / 0.0;
@@ -103,8 +103,13 @@ const Material solidRed    = Material(vec3(1.0, 0.0, 0.0), 0.0,  0.0,       fals
 const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,       false, false);
 const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,       false, false);
 const Material solidWhite  = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,       false, false);
+const Material cornellRed  = Material(vec3(1.0, 0.01, 0.01), 0.01,  0.0,       false, false);
+const Material cornellGreen= Material(vec3(0.01, 1.0, 0.01), 0.01,  0.0,       false, false);
+const Material cornellWhite= Material(vec3(0.9, 0.9, 0.9), 0.01,  0.0,       false, false);
+
+
 const Material light       = Material(vec3(10.0, 10.0, 10.0), 0.0,  0.0,    false, true );
-const Material strongLight = Material(vec3(100.0, 100.0, 100.0), 0.0,  0.0, false, true );
+const Material strongLight = Material(vec3(255.0, 255.0, 255.0), 0.0,  0.0, false, true );
 
 /**/ // switch
 const Sphere lights[] = Sphere[](
@@ -139,18 +144,18 @@ const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-2.0, 0.1,-2.0), 0.1, solidBlue),
 	Sphere(vec3( 0.0, 0.1,-2.0), 0.1, glass),
 
-	Sphere(vec3( 0.0,-500, 0.0), 500.0, ground) // ground
+	Sphere(vec3( 0.0,-255, 0.0), 255.0, ground) // ground
 );
 /*/
 const Sphere lights[] = Sphere[](
-	Sphere(vec3( 0.0, 11.48, 0.0), 10.0, light)
+	Sphere(vec3( 0.0, 2.4, 0.0), 1.0, light)
 );
 const Sphere spheres[] = Sphere[](
-	Sphere(vec3(-1001.0, 0.5, 0.0), 1000.0, solidRed),
-	Sphere(vec3( 1001.0, 0.5, 0.0), 1000.0, solidGreen),
-	Sphere(vec3( 0.0, 0.5,-1001.0), 1000.0, solidWhite),
-	Sphere(vec3(0.0, 1001.5, 0.0), 1000.0, solidWhite),
-	Sphere(vec3(0.0,-1000.5, 0.0), 1000.0, solidWhite),
+	Sphere(vec3(-251.0, 0.0, 0.0), 250.0, cornellRed),
+	Sphere(vec3( 251.0, 0.0, 0.0), 250.0, cornellGreen),
+	Sphere(vec3( 0.0, 0.0,-251.0), 250.0, cornellWhite),
+	Sphere(vec3(0.0, 251.5, 0.0), 250.0, cornellWhite),
+	Sphere(vec3(0.0,-250.5, 0.0), 250.0, cornellWhite),
 
 	Sphere(vec3( -0.3, 0.0, 0.0), 0.5, metal),
 	Sphere(vec3( 0.5, -0.2, 0.6), 0.3, glass)
@@ -243,6 +248,10 @@ HitRecord WorldHit(Ray ray){
 	return rec;	
 }
 
+vec3 directionToLight(Sphere light, vec3 point){
+	return normalize(light.center + light.radius * random_in_unit_sphere(point.x) - point);
+}
+
 vec3 LightHit(vec3 point, vec3 normal){
 	
 	//return vec3(0);
@@ -250,10 +259,8 @@ vec3 LightHit(vec3 point, vec3 normal){
 	vec3 lightColor = vec3(0);
 	HitRecord rec = HitRecord(vec3(0.0),vec3(0.0), INFINITY, 0.0, 0.0, false, ground);
 	for(int i = 0; i < lights.length(); i++){
-		if(!lights[i].material.emissive)
-			continue;
-	
-		Ray ray = Ray(point, normalize(lights[i].center + lights[i].radius * random_in_unit_sphere(point.x) - point));
+		
+		Ray ray = Ray(point, directionToLight(lights[i], point));
 		
 		if(dot(normal, ray.direction) <= 0.0)
 			continue;
@@ -263,6 +270,7 @@ vec3 LightHit(vec3 point, vec3 normal){
 	}
 	return lightColor;	
 }
+
 
 vec3 rayColor(Ray ray){
 	vec3 colorOut = vec3(1.0);

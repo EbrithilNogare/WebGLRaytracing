@@ -7,22 +7,22 @@ let camera = {
 }
 
 
-async function init(width = window.innerWidth, height = window.innerHeight){
+async function init(){
 	canvas = document.getElementById("canvas");
-	canvas.width = width;
-	canvas.height = height;	
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;	
 
 	canvas.addEventListener("webglcontextlost", function(event) {
-		event.preventDefault();
 		console.error("webglcontextlost", event);
-		init(width/2, height/2);
+		event.preventDefault();
 	}, false);
 	
 	gl = canvas.getContext('webgl2');
-	gl.imageSmoothingEnabled = false;
 
 	if(!gl)
 		throw("no webgl 2")
+
+	gl.imageSmoothingEnabled = false;
 
 	document.body.onkeydown = function(e) {
 		if (e.key == " " ||
@@ -117,7 +117,7 @@ function render(){
 	gl.drawArrays(
 		gl.TRIANGLES,	// primitive type
 		0,				// offset
-		6				// count
+		3				// count
 	);
 
 }
