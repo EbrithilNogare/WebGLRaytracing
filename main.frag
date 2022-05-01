@@ -11,8 +11,8 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-#define SAMPLES 32
-#define MAXBOUNCES 8
+#define SAMPLES 16
+#define MAXBOUNCES 6
 
 
 const float INFINITY = 1.0 / 0.0;
@@ -93,32 +93,37 @@ vec3 random_in_hemisphere(vec3 normal, float seed) {
         return -in_unit_sphere;
 }
 
-//                                           R    G    B  Reflect Refract Texture Emissive
-const Material ground      = Material(vec3(0.3, 0.3, 0.3), 0.0,  0.0,       true,  false);
-const Material glass       = Material(vec3(1.0, 1.0, 1.0), 1.0,  1.5,       false, false);
-const Material metal       = Material(vec3(1.0, 1.0, 1.0), 1.0,  0.0,       false, false);
-const Material solidIndigo = Material(vec3(0.3, 0.0, 0.5), 0.0,  0.0,       false, false);
-const Material solidGreen  = Material(vec3(0.0, 1.0, 0.0), 0.0,  0.0,       false, false);
-const Material solidRed    = Material(vec3(1.0, 0.0, 0.0), 0.0,  0.0,       false, false);
-const Material solidBlue   = Material(vec3(0.0, 0.0, 1.0), 0.0,  0.0,       false, false);
-const Material solidYellow = Material(vec3(1.0, 1.0, 0.0), 0.0,  0.0,       false, false);
-const Material solidWhite  = Material(vec3(1.0, 1.0, 1.0), 0.0,  0.0,       false, false);
-const Material cornellRed  = Material(vec3(1.0, 0.01, 0.01), 0.01,  0.0,       false, false);
-const Material cornellGreen= Material(vec3(0.01, 1.0, 0.01), 0.01,  0.0,       false, false);
-const Material cornellWhite= Material(vec3(0.9, 0.9, 0.9), 0.01,  0.0,       false, false);
+//                                           R    G    B    Reflect Refract   Texture Emissive
+const Material ground       = Material(vec3(0.3, 0.3, 0.3),   0.0,  0.0,       true,  false);
+const Material glass        = Material(vec3(1.0, 1.0, 1.0),   1.0,  1.5,       false, false);
+const Material metal        = Material(vec3(1.0, 1.0, 1.0),   1.0,  0.0,       false, false);
+const Material roughtMetal  = Material(vec3(1.0, 1.0, 1.0),   0.3,  0.0,       false, false);
 
+const Material solidIndigo  = Material(vec3(0.3, 0.0, 0.5),   0.0,  0.0,       false, false);
+const Material solidGreen   = Material(vec3(0.0, 1.0, 0.0),   0.0,  0.0,       false, false);
+const Material solidRed     = Material(vec3(1.0, 0.0, 0.0),   0.0,  0.0,       false, false);
+const Material solidBlue    = Material(vec3(0.0, 0.0, 1.0),   0.0,  0.0,       false, false);
+const Material solidYellow  = Material(vec3(1.0, 1.0, 0.0),   0.0,  0.0,       false, false);
+const Material solidWhite   = Material(vec3(1.0, 1.0, 1.0),   0.0,  0.0,       false, false);
+const Material cornellRed   = Material(vec3(1.0, 0.01, 0.01), 0.01,  0.0,      false, false);
+const Material cornellGreen = Material(vec3(0.01, 1.0, 0.01), 0.01,  0.0,      false, false);
+const Material cornellWhite = Material(vec3(0.9, 0.9, 0.9),   0.01,  0.0,      false, false);
 
-const Material light       = Material(vec3(10.0, 10.0, 10.0), 0.0,  0.0,    false, true );
-const Material strongLight = Material(vec3(255.0, 255.0, 255.0), 0.0,  0.0, false, true );
+const Material light        = Material(vec3( 10.0,  10.0,  10.0 ), 0.0,  0.0,  false, true );
+const Material strongLight  = Material(vec3(100.0, 100.0, 100.0 ), 0.0,  0.0,  false, true );
+const Material glowOrange   = Material(vec3(  1.7,   0.6,   0.01), 0.0,  0.0,  false, true );
 
 /**/ // switch
 const Sphere lights[] = Sphere[](
-	Sphere(vec3( 0.0, 20,0.0), 10.0, strongLight)
+	Sphere(vec3( 0.5, 0.2, 1.5),  0.1, glowOrange),
+	Sphere(vec3(-0.5, 0.2,-1.5),  0.1, glowOrange),
+	Sphere(vec3( 0.0, 20,  0.0), 10.0, strongLight)
 );
 const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-1.2, 0.5, 0.0), 0.5, solidIndigo),
 	Sphere(vec3( 0.0, 0.5, 0.0), 0.5, glass),
 	Sphere(vec3( 1.2, 0.5, 0.0), 0.5, metal),
+	Sphere(vec3( 2.4, 0.5, 0.0), 0.3, roughtMetal),
 
 	Sphere(vec3( 1.0, 0.1, 1.0), 0.1, solidYellow),
 	Sphere(vec3(-1.0, 0.1, 1.0), 0.1, solidGreen),
@@ -295,8 +300,8 @@ vec3 rayColor(Ray ray){
 
 		vec3 light = LightHit(rec.p, rec.normal);
 
-		if(rec.material.refraction == 0.0 && rec.material.reflection <= rand(rec.t) && light != vec3(0)){ // light on solid
-			lightAdditive += colorOut * light * materialColor;
+		if(rec.material.refraction == 0.0){ // light on solid
+			lightAdditive += colorOut * light * materialColor * (1.0 - rec.material.reflection);
 		}
 
 		if(rec.t >= INFINITY){ // nothing hitted
@@ -309,11 +314,13 @@ vec3 rayColor(Ray ray){
 			float refraction_ratio = rec.frontFace ? (1.0 / rec.material.refraction) : rec.material.refraction;
 			vec3 unit_direction = normalize(ray.direction);
 			target = refract(unit_direction, rec.normal, refraction_ratio);
-		} else if(rec.material.reflection > rand(rec.t)) // mirror
-			target = reflect(ray.direction, rec.normal);
-		else // diffuse
-			target = rec.normal + random_in_hemisphere(rec.normal, rec.t + float(depth));
-
+		} else{
+			// mirror
+			vec3 targetReflect = reflect(ray.direction, rec.normal);
+			// diffuse
+			vec3 targetDiffuse = rec.normal + random_in_hemisphere(rec.normal, rec.t + float(depth));
+			target = mix(targetDiffuse, targetReflect, rec.material.reflection);
+		}
 		ray = Ray(rec.p, target);
 
 		colorOut *= materialColor;
