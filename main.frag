@@ -11,7 +11,7 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-#define SAMPLES 16
+#define SAMPLES 32
 #define MAXBOUNCES 8
 
 

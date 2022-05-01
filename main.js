@@ -11,16 +11,13 @@ async function init(){
 	canvas = document.getElementById("canvas");
 	canvas.width = window.innerWidth;
 	canvas.height = window.innerHeight;	
-
-	canvas.addEventListener("webglcontextlost", function(event) {
-		console.error("webglcontextlost", event);
-		event.preventDefault();
-	}, false);
 	
 	gl = canvas.getContext('webgl2');
 
-	if(!gl)
-		throw("no webgl 2")
+	if(!gl){
+		document.getElementById("helper").innerHTML += "<br/>no webgl 2";
+		throw("no webgl 2");
+	}
 
 	gl.imageSmoothingEnabled = false;
 
