@@ -1,5 +1,5 @@
 # WebGLRaytracing
-raytracing in webgl
+ray tracing in webgl 2
 
 ## Run
 start serving files  

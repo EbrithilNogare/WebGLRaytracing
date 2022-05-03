@@ -14,8 +14,13 @@ async function init(){
 	
 	gl = canvas.getContext('webgl2');
 
+	canvas.addEventListener("webglcontextlost", function(event) {
+		document.getElementById("errorLog").innerHTML += "<br/>webglcontextlost";
+		event.preventDefault();
+	}, false);
+
 	if(!gl){
-		document.getElementById("helper").innerHTML += "<br/>no webgl 2";
+		document.getElementById("errorLog").innerHTML += "<br/>no webgl 2";
 		throw("no webgl 2");
 	}
 
@@ -27,6 +32,7 @@ async function init(){
 		)
 		loop = !loop
 	}
+	
 
 	await initProgram()
 
@@ -35,13 +41,18 @@ async function init(){
 }
 
 async function initProgram(){
+	
+	document.getElementById("errorLog").innerHTML += "Downloading vertex shader ... ";
 	let vertexShaderText = await fetch("main.vert")
 		.then(response => response.text())
 		.catch(()=>{throw("cannot load main.vert")});
+	document.getElementById("errorLog").innerHTML += "DONE<br/>";
 
+	document.getElementById("errorLog").innerHTML += "Downloading fragment shader ... ";
 	let fragmentShaderText = await fetch("main.frag")
 		.then(response => response.text())
 		.catch(()=>{throw("cannot load main.frag")});
+	document.getElementById("errorLog").innerHTML += "DONE<br/>";
 
 	let stopwatch = Date.now();
 
@@ -51,15 +62,19 @@ async function initProgram(){
 	gl.shaderSource(vertexShader, vertexShaderText);
 	gl.shaderSource(fragmentShader, fragmentShaderText);
 
+	document.getElementById("errorLog").innerHTML += "Compiling vertex shader ... ";
 	gl.compileShader(vertexShader);
 	if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
 		console.error(`ERROR compiling vertex shader! \n ${gl.getShaderInfoLog(vertexShader)}`);
 	}
+	document.getElementById("errorLog").innerHTML += "DONE<br/>";
 
+	document.getElementById("errorLog").innerHTML += "Compiling fragment shader ... ";
 	gl.compileShader(fragmentShader);
 	if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
 		console.error(`ERROR compiling fragment shader! \n ${gl.getShaderInfoLog(fragmentShader)}`);
 	}
+	document.getElementById("errorLog").innerHTML += "DONE<br/>";
 
 	program = gl.createProgram();
 	gl.attachShader(program, vertexShader);

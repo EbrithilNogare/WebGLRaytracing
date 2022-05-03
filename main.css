@@ -34,9 +34,23 @@ canvas {
 
 #helper{
     position: absolute;
+    left: calc(50% - 400px / 2);
+    width: 400px;
+    top: 0;
+    margin: 3px;
+    color: #f00;
+    background: black;
+    font-family: monospace;
+    text-align: center;
+    font-size: x-large;
+}
+
+#console{
+    position: absolute;
     right: 0;
     top: 0;
     margin: 3px;
     color: #f00;
     background: black;
+    font-family: monospace;
 }

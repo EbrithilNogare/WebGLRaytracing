@@ -12,7 +12,7 @@ out vec4 outColor;
 
 // editable
 #define SAMPLES 16
-#define MAXBOUNCES 6
+#define MAXBOUNCES 8
 
 
 const float INFINITY = 1.0 / 0.0;
@@ -258,9 +258,6 @@ vec3 directionToLight(Sphere light, vec3 point){
 }
 
 vec3 LightHit(vec3 point, vec3 normal){
-	
-	//return vec3(0);
-	
 	vec3 lightColor = vec3(0);
 	HitRecord rec = HitRecord(vec3(0.0),vec3(0.0), INFINITY, 0.0, 0.0, false, ground);
 	for(int i = 0; i < lights.length(); i++){
@@ -278,7 +275,7 @@ vec3 LightHit(vec3 point, vec3 normal){
 
 
 vec3 rayColor(Ray ray){
-	vec3 colorOut = vec3(1.0);
+	vec3 rayColor = vec3(1.0);
 	vec3 lightAdditive = vec3(0.0);
 	float totalDistance = 0.0;
 	int depth = 0;
@@ -294,18 +291,19 @@ vec3 rayColor(Ray ray){
 		totalDistance += rec.t;
 
 		if(rec.material.emissive){ // light
-			colorOut *= materialColor / pow(totalDistance, 3.0);
+			rayColor *= materialColor / pow(totalDistance, 3.0);
+			lightAdditive += rayColor;
 			break;
 		}
 
 		vec3 light = LightHit(rec.p, rec.normal);
 
 		if(rec.material.refraction == 0.0){ // light on solid
-			lightAdditive += colorOut * light * materialColor * (1.0 - rec.material.reflection);
+			lightAdditive += rayColor * light * materialColor * (1.0 - rec.material.reflection);
 		}
 
 		if(rec.t >= INFINITY){ // nothing hitted
-			colorOut = vec3(0);
+			rayColor = vec3(0);
 			break;
 		}
 
@@ -323,8 +321,7 @@ vec3 rayColor(Ray ray){
 		}
 		ray = Ray(rec.p, target);
 
-		colorOut *= materialColor;
+		rayColor *= materialColor;
 	}
-	
-	return depth == MAXBOUNCES ? lightAdditive : (colorOut + lightAdditive) / 2.0;
+	return lightAdditive;
 }
