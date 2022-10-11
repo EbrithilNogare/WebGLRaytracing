@@ -105,10 +105,11 @@ const Material solidRed     = Material(vec3(1.0, 0.0, 0.0),   0.0,  0.0,       f
 const Material solidBlue    = Material(vec3(0.0, 0.0, 1.0),   0.0,  0.0,       false, false);
 const Material solidYellow  = Material(vec3(1.0, 1.0, 0.0),   0.0,  0.0,       false, false);
 const Material solidWhite   = Material(vec3(1.0, 1.0, 1.0),   0.0,  0.0,       false, false);
-const Material cornellRed   = Material(vec3(1.0, 0.01, 0.01), 0.01,  0.0,      false, false);
-const Material cornellGreen = Material(vec3(0.01, 1.0, 0.01), 0.01,  0.0,      false, false);
-const Material cornellWhite = Material(vec3(0.9, 0.9, 0.9),   0.01,  0.0,      false, false);
+const Material cornellRed   = Material(vec3(1.0, 0.01, 0.01), 0.01, 0.0,       false, false);
+const Material cornellGreen = Material(vec3(0.01, 1.0, 0.01), 0.01, 0.0,       false, false);
+const Material cornellWhite = Material(vec3(0.9, 0.9, 0.9),   0.01, 0.0,       false, false);
 
+const Material weakLight    = Material(vec3(  1.0,   1.0,   1.0 ), 0.0,  0.0,  false, true );
 const Material light        = Material(vec3( 10.0,  10.0,  10.0 ), 0.0,  0.0,  false, true );
 const Material strongLight  = Material(vec3(100.0, 100.0, 100.0 ), 0.0,  0.0,  false, true );
 const Material glowOrange   = Material(vec3(  1.7,   0.6,   0.01), 0.0,  0.0,  false, true );
@@ -153,7 +154,7 @@ const Sphere spheres[] = Sphere[](
 );
 /*/
 const Sphere lights[] = Sphere[](
-	Sphere(vec3( 0.0, 2.4, 0.0), 1.0, light)
+	Sphere(vec3( 0.0, 1.8, 0.0), 0.5, weakLight)
 );
 const Sphere spheres[] = Sphere[](
 	Sphere(vec3(-251.0, 0.0, 0.0), 250.0, cornellRed),
