@@ -11,8 +11,8 @@ uniform vec3 cameraLookAt;
 out vec4 outColor;
 
 // editable
-#define SAMPLES 16
-#define MAXBOUNCES 8
+#define SAMPLES 2
+#define MAXBOUNCES 6
 
 
 const float INFINITY = 1.0 / 0.0;
